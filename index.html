@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Remova metadados incorporados de imagens localmente no navegador.">
+  <title>C2PA Remover (Conteúdo de IA)</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #f8fafc;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #dbe3ee;
+      --success: #15803d;
+      --error: #b91c1c;
+      --shadow: 0 12px 30px rgba(30, 41, 59, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    main {
+      width: min(calc(100% - 32px), 900px);
+      margin: 0 auto;
+      padding: 48px 0 32px;
+      flex: 1;
+    }
+
+    header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 5vw, 2.4rem);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      max-width: 540px;
+      margin: 12px auto 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .card {
+      padding: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      padding: 28px;
+      border: 2px dashed #93b4ef;
+      border-radius: 12px;
+      color: var(--muted);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .upload-area:hover,
+    .upload-area:focus-visible,
+    .upload-area.is-dragging {
+      border-color: var(--primary);
+      background: #eff6ff;
+      outline: none;
+    }
+
+    .upload-icon {
+      width: 42px;
+      height: 42px;
+      margin-bottom: 16px;
+      color: var(--primary);
+    }
+
+    .upload-label {
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 650;
+    }
+
+    .upload-help {
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+
+    .upload-message {
+      min-height: 24px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .upload-message.warning {
+      color: var(--error);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .results {
+      margin-top: 24px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .result-card {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .preview-frame {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 160px;
+      padding: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f1f5f9;
+    }
+
+    .preview-frame img {
+      display: block;
+      max-width: 100%;
+      max-height: 240px;
+      object-fit: contain;
+    }
+
+    .file-name {
+      margin: 14px 0 6px;
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status {
+      min-height: 24px;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .status.error {
+      color: var(--error);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .result-card .actions {
+      gap: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .download-button {
+      padding: 11px 16px;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .result-card .download-button,
+    .result-card .remove-button {
+      flex: 1;
+      padding: 9px 10px;
+      font-size: 0.9rem;
+    }
+
+    .download-button:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .download-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .remove-button {
+      padding: 11px 16px;
+      background: #e8eef8;
+      color: var(--text);
+    }
+
+    .remove-button:hover {
+      background: #dce6f4;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    footer {
+      width: min(calc(100% - 32px), 900px);
+      margin: 0 auto;
+      padding: 0 0 28px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    footer p {
+      margin: 6px 0;
+    }
+
+    @media (max-width: 520px) {
+      main {
+        padding-top: 32px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .upload-area {
+        min-height: 200px;
+        padding: 20px;
+      }
+
+      .actions > * {
+        width: 100%;
+      }
+
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <main>
+      <header>
+        <h1>C2PA Remover (Conteúdo de IA)</h1>
+        <p class="subtitle">Remova metadados incorporados das suas imagens, diretamente no navegador.</p>
+      </header>
+
+      <section class="card" aria-labelledby="upload-title">
+        <h2 id="upload-title" class="visually-hidden">Selecionar imagem</h2>
+        <label
+          class="upload-area"
+          id="drop-zone"
+          for="file-input"
+          tabindex="0"
+          role="button"
+          aria-describedby="upload-help"
+        >
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v2A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5v-2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="upload-label">Arraste suas imagens aqui ou clique para selecionar</span>
+          <span class="upload-help" id="upload-help">Até 4 imagens · JPG, JPEG, PNG ou WebP · até 20 MB cada</span>
+          <input class="visually-hidden" id="file-input" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+        </label>
+        <p class="upload-message" id="upload-message" aria-live="polite"></p>
+
+        <div class="results" id="results" hidden aria-live="polite">
+          <div class="result-grid" id="result-grid"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Sua imagem é processada no próprio navegador. Nenhum arquivo é enviado para servidores.</p>
+      <p>A ferramenta remove metadados incorporados por reexportação, mas não remove marcas d'água presentes nos pixels.</p>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const MAX_FILE_SIZE = 20 * 1024 * 1024;
+      const MAX_PIXELS = 100000000;
+      const SUPPORTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+      const MIME_TO_EXTENSION = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+      };
+
+      const fileInput = document.getElementById("file-input");
+      const dropZone = document.getElementById("drop-zone");
+      const results = document.getElementById("results");
+      const resultGrid = document.getElementById("result-grid");
+      const uploadMessage = document.getElementById("upload-message");
+      const items = [];
+      let isProcessing = false;
+
+      function releaseUrl(url) {
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+      }
+
+      function setUploadMessage(message, isWarning) {
+        uploadMessage.textContent = message;
+        uploadMessage.className = "upload-message" + (isWarning ? " warning" : "");
+      }
+
+      function setItemStatus(item, message, state) {
+        item.status.textContent = message;
+        item.status.className = "status" + (state ? " " + state : "");
+      }
+
+      function getFileType(file) {
+        if (SUPPORTED_TYPES.has(file.type)) {
+          return file.type;
+        }
+
+        const extension = file.name.toLowerCase().split(".").pop();
+        if (extension === "jpg" || extension === "jpeg") {
+          return "image/jpeg";
+        }
+        if (extension === "png") {
+          return "image/png";
+        }
+        if (extension === "webp") {
+          return "image/webp";
+        }
+        return null;
+      }
+
+      function getOutputType(inputType) {
+        if (inputType === "image/jpeg" && typeof HTMLCanvasElement.prototype.toBlob === "function") {
+          return "image/jpeg";
+        }
+        if (inputType === "image/webp" && typeof HTMLCanvasElement.prototype.toBlob === "function") {
+          return "image/webp";
+        }
+        return "image/png";
+      }
+
+      function loadImage(url) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error("image-decode-failed"));
+          image.src = url;
+        });
+      }
+
+      function canvasToBlob(canvas, type, quality) {
+        return new Promise((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("image-encode-failed"));
+            }
+          }, type, quality);
+        });
+      }
+
+      function createItem(file) {
+        const item = {
+          id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random(),
+          file,
+          sourceUrl: null,
+          downloadUrl: null,
+          downloadName: "",
+          removed: false,
+          status: null,
+          downloadButton: null,
+          element: null
+        };
+        const card = document.createElement("article");
+        card.className = "result-card";
+        card.dataset.id = item.id;
+
+        const frame = document.createElement("div");
+        frame.className = "preview-frame";
+        const image = document.createElement("img");
+        image.alt = "Prévia de " + file.name;
+        frame.appendChild(image);
+
+        const name = document.createElement("p");
+        name.className = "file-name";
+        name.title = file.name;
+        name.textContent = file.name;
+
+        const status = document.createElement("p");
+        status.className = "status";
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const downloadButton = document.createElement("button");
+        downloadButton.className = "download-button";
+        downloadButton.type = "button";
+        downloadButton.disabled = true;
+        downloadButton.textContent = "Baixar";
+        downloadButton.dataset.action = "download";
+        const removeButton = document.createElement("button");
+        removeButton.className = "remove-button";
+        removeButton.type = "button";
+        removeButton.textContent = "Remover";
+        removeButton.dataset.action = "remove";
+        actions.append(downloadButton, removeButton);
+        card.append(frame, name, status, actions);
+        resultGrid.appendChild(card);
+
+        item.sourceImage = image;
+        item.status = status;
+        item.downloadButton = downloadButton;
+        item.element = card;
+        setItemStatus(item, "Na fila...", "");
+        return item;
+      }
+
+      async function processItem(item) {
+        if (item.removed) {
+          return;
+        }
+        setItemStatus(item, "Processando imagem...", "");
+        const inputType = getFileType(item.file);
+        if (!inputType || item.file.size > MAX_FILE_SIZE) {
+          setItemStatus(item, !inputType ? "Formato não suportado." : "Não foi possível processar esta imagem.", "error");
+          return;
+        }
+
+        const inputUrl = URL.createObjectURL(item.file);
+        item.sourceUrl = inputUrl;
+
+        try {
+          const image = await loadImage(inputUrl);
+          if (item.removed) {
+            return;
+          }
+          if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth * image.naturalHeight > MAX_PIXELS) {
+            throw new Error("image-too-large");
+          }
+
+          item.sourceImage.src = inputUrl;
+          const canvas = document.createElement("canvas");
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          const context = canvas.getContext("2d", { alpha: true });
+          if (!context) {
+            throw new Error("canvas-unavailable");
+          }
+          context.drawImage(image, 0, 0);
+
+          let outputType = getOutputType(inputType);
+          let blob = await canvasToBlob(canvas, outputType, outputType === "image/png" ? undefined : 0.95);
+          if (outputType !== "image/png" && blob.type !== outputType) {
+            outputType = "image/png";
+            blob = await canvasToBlob(canvas, outputType);
+          }
+
+          if (item.removed) {
+            return;
+          }
+          item.downloadUrl = URL.createObjectURL(blob);
+          const baseName = item.file.name.replace(/\.[^/.]+$/, "") || "imagem";
+          item.downloadName = baseName + "-clean." + MIME_TO_EXTENSION[outputType];
+          item.downloadButton.disabled = false;
+          setItemStatus(item, "Imagem processada com sucesso!", "success");
+        } catch (error) {
+          if (!item.removed) {
+            setItemStatus(item, "Não foi possível processar esta imagem.", "error");
+          }
+        }
+      }
+
+      async function processQueue() {
+        if (isProcessing) {
+          return;
+        }
+        isProcessing = true;
+        for (const item of items) {
+          if (!item.removed && item.status.textContent === "Na fila...") {
+            await processItem(item);
+          }
+        }
+        isProcessing = false;
+      }
+
+      function addFiles(fileList) {
+        const files = Array.from(fileList);
+        const availableSlots = 4 - items.filter((item) => !item.removed).length;
+        if (!files.length) {
+          return;
+        }
+        if (availableSlots <= 0) {
+          setUploadMessage("Você já adicionou 4 imagens. Remova uma para adicionar outra.", true);
+          return;
+        }
+
+        const filesToAdd = files.slice(0, availableSlots);
+        filesToAdd.forEach((file) => {
+          const item = createItem(file);
+          items.push(item);
+        });
+        results.hidden = false;
+
+        if (files.length > availableSlots) {
+          setUploadMessage("Limite de 4 imagens atingido. As imagens excedentes não foram adicionadas.", true);
+        } else {
+          setUploadMessage("", false);
+        }
+        processQueue();
+      }
+
+      fileInput.addEventListener("change", () => {
+        addFiles(fileInput.files);
+        fileInput.value = "";
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.classList.add("is-dragging");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.classList.remove("is-dragging");
+        });
+      });
+
+      dropZone.addEventListener("drop", (event) => {
+        addFiles(event.dataTransfer.files);
+      });
+
+      dropZone.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          fileInput.click();
+        }
+      });
+
+      resultGrid.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) {
+          return;
+        }
+        const item = items.find((candidate) => candidate.id === button.closest(".result-card").dataset.id);
+        if (!item) {
+          return;
+        }
+        if (button.dataset.action === "download" && item.downloadUrl) {
+          const link = document.createElement("a");
+          link.href = item.downloadUrl;
+          link.download = item.downloadName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+        if (button.dataset.action === "remove") {
+          item.removed = true;
+          releaseUrl(item.sourceUrl);
+          releaseUrl(item.downloadUrl);
+          item.sourceUrl = null;
+          item.downloadUrl = null;
+          item.element.remove();
+          if (items.every((candidate) => candidate.removed)) {
+            results.hidden = true;
+          }
+          setUploadMessage("", false);
+          processQueue();
+        }
+      });
+
+      window.addEventListener("pagehide", () => {
+        items.forEach((item) => {
+          releaseUrl(item.sourceUrl);
+          releaseUrl(item.downloadUrl);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
