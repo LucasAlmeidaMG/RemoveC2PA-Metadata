@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Remova metadados incorporados de imagens localmente no navegador.">
+  <meta name="theme-color" content="#2563EB">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <title>C2PA Remover (Conteúdo de IA)</title>
   <style>
     :root {
@@ -62,6 +65,36 @@
       margin: 12px auto 0;
       color: var(--muted);
       font-size: 1rem;
+    }
+
+    .install-area {
+      display: flex;
+      justify-content: center;
+      margin-top: 18px;
+    }
+
+    .install-button {
+      padding: 8px 12px;
+      background: transparent;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .install-button:hover {
+      background: #eaf2ff;
+    }
+
+    .install-help {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.45;
+      text-align: left;
     }
 
     .card {
@@ -296,6 +329,10 @@
       <header>
         <h1>C2PA Remover (Conteúdo de IA)</h1>
         <p class="subtitle">Remova metadados incorporados das suas imagens, diretamente no navegador.</p>
+        <div class="install-area" id="install-area" hidden>
+          <button class="install-button" id="install-button" type="button">Adicionar à tela inicial</button>
+        </div>
+        <p class="install-help" id="install-help" hidden></p>
       </header>
 
       <section class="card" aria-labelledby="upload-title">
@@ -347,8 +384,69 @@
       const results = document.getElementById("results");
       const resultGrid = document.getElementById("result-grid");
       const uploadMessage = document.getElementById("upload-message");
+      const installArea = document.getElementById("install-area");
+      const installButton = document.getElementById("install-button");
+      const installHelp = document.getElementById("install-help");
       const items = [];
+      let deferredInstallPrompt = null;
       let isProcessing = false;
+
+      function isStandalone() {
+        return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      }
+
+      function showInstallHelp(message) {
+        if (isStandalone()) {
+          return;
+        }
+        installArea.hidden = true;
+        installHelp.textContent = message;
+        installHelp.hidden = false;
+      }
+
+      function setupInstallPrompt() {
+        if (isStandalone()) {
+          return;
+        }
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (isIos) {
+          installArea.hidden = false;
+          installButton.addEventListener("click", () => {
+            showInstallHelp("No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.");
+          });
+          return;
+        }
+        if (!isIos) {
+          installArea.hidden = false;
+          installButton.addEventListener("click", () => {
+            if (deferredInstallPrompt) {
+              deferredInstallPrompt.prompt();
+              deferredInstallPrompt.userChoice.finally(() => {
+                deferredInstallPrompt = null;
+                installArea.hidden = true;
+              });
+            } else {
+              showInstallHelp("Use o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.");
+            }
+          });
+        }
+      }
+
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        if (!isStandalone()) {
+          installArea.hidden = false;
+        }
+      });
+
+      window.addEventListener("appinstalled", () => {
+        deferredInstallPrompt = null;
+        installArea.hidden = true;
+        installHelp.hidden = true;
+      });
+
+      setupInstallPrompt();
 
       function releaseUrl(url) {
         if (url) {
