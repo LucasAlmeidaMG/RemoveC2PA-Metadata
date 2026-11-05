@@ -6,7 +6,7 @@
   <meta name="description" content="Remova metadados incorporados de imagens localmente no navegador.">
   <meta name="theme-color" content="#2563EB">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="logo-180.png">
   <title>C2PA Remover (Conteúdo de IA)</title>
   <style>
     :root {
@@ -51,6 +51,19 @@
     header {
       margin-bottom: 32px;
       text-align: center;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .brand-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
     }
 
     h1 {
@@ -329,7 +342,10 @@
   <div class="page">
     <main>
       <header>
-        <h1>C2PA Remover (Conteúdo de IA)</h1>
+        <div class="brand">
+          <img class="brand-logo" src="logo-192.png" alt="" width="48" height="48">
+          <h1>C2PA Remover (Conteúdo de IA)</h1>
+        </div>
         <p class="subtitle">Remova metadados incorporados das suas imagens, diretamente no navegador.</p>
         <div class="install-area" id="install-area" hidden>
           <button class="install-button" id="install-button" type="button">Adicionar à tela inicial</button>
