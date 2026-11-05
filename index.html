@@ -70,29 +70,31 @@
     .install-area {
       display: flex;
       justify-content: center;
-      margin-top: 18px;
+      margin-top: 8px;
     }
 
     .install-button {
-      padding: 8px 12px;
+      padding: 4px 7px;
       background: transparent;
-      color: var(--primary);
-      font-size: 0.9rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 500;
     }
 
     .install-button:hover {
-      background: #eaf2ff;
+      color: var(--primary);
+      text-decoration: underline;
     }
 
     .install-help {
-      max-width: 440px;
-      margin: 0 auto;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #fff;
+      max-width: 390px;
+      margin: 8px auto 0;
+      padding: 8px 10px;
+      border: 1px solid #e5eaf2;
+      border-radius: 8px;
+      background: #f8fafc;
       color: var(--muted);
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       line-height: 1.45;
       text-align: left;
     }
@@ -408,28 +410,31 @@
         if (isStandalone()) {
           return;
         }
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+          || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
         if (isIos) {
+          installButton.textContent = "Adicionar à Tela de Início";
           installArea.hidden = false;
           installButton.addEventListener("click", () => {
             showInstallHelp("No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.");
           });
           return;
         }
-        if (!isIos) {
-          installArea.hidden = false;
-          installButton.addEventListener("click", () => {
-            if (deferredInstallPrompt) {
-              deferredInstallPrompt.prompt();
-              deferredInstallPrompt.userChoice.finally(() => {
-                deferredInstallPrompt = null;
-                installArea.hidden = true;
-              });
-            } else {
-              showInstallHelp("Use o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.");
-            }
-          });
-        }
+        installButton.textContent = /android/i.test(navigator.userAgent) ? "Instalar app" : "Adicionar à tela inicial";
+        installArea.hidden = false;
+        installButton.addEventListener("click", () => {
+          if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.finally(() => {
+              deferredInstallPrompt = null;
+              installArea.hidden = true;
+            });
+          } else {
+            showInstallHelp(/android/i.test(navigator.userAgent)
+              ? "Abra o menu do navegador e toque em “Instalar aplicativo” ou “Adicionar à tela inicial”."
+              : "Abra o menu do navegador e escolha “Adicionar à tela inicial”.");
+          }
+        });
       }
 
       window.addEventListener("beforeinstallprompt", (event) => {
